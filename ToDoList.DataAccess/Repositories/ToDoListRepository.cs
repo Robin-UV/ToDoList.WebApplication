@@ -9,8 +9,8 @@ using ToDoList.DataAccess.Models;
 namespace ToDoList.DataAccess.Repositories
 {
     public class ToDoListRepository
-    {
-        ToDoListDBContext _dbContext;
+    { 
+        private readonly ToDoListDBContext _dbContext;
 
         public ToDoListRepository(ToDoListDBContext dbContext)
         {
@@ -27,14 +27,10 @@ namespace ToDoList.DataAccess.Repositories
 
         public int UpdateTask(ToDoListModels task)
         {
-            ToDoListModels existingTask = _dbContext.ToDoListContext.Find(task.TaskID); 
+            ToDoListModels existingTask = _dbContext.ToDoListContext.Find(task.TaskID)!; 
 
             existingTask.TaskName = task.TaskName;
             existingTask.TaskDescription = task.TaskDescription;
-            existingTask.CreatedDate = task.CreatedDate;
-            existingTask.CompletedDate = task.CompletedDate;
-            existingTask.IsCompleted = task.IsCompleted;
-            existingTask.IsArchived = task.IsArchived;
             
             _dbContext.SaveChanges();   
 
@@ -43,24 +39,60 @@ namespace ToDoList.DataAccess.Repositories
 
         public bool CompleteTask(int taskID)
         {
-            ToDoListModels task = _dbContext.ToDoListContext.Find(taskID);
+            ToDoListModels task = _dbContext.ToDoListContext.Find(taskID)!;
 
-            _dbContext.Remove(task);
+            task.IsCompleted = true;
+            task.CompletedDate = DateTime.UtcNow;
+
             _dbContext.SaveChanges();
 
             return true; 
         }
 
-        public List<ToDoListModels> GetAllTasks()
+        public bool UnCompleteTask(int taskID)
         {
-            List<ToDoListModels> toDoList = _dbContext.ToDoListContext.ToList();
+            ToDoListModels task = _dbContext.ToDoListContext.Find(taskID)!;
 
-            return toDoList; 
+            task.IsCompleted = false; 
+
+            _dbContext.SaveChanges();
+
+            return true; 
+        }
+
+        public bool ArchiveTask(int taskID)
+        {
+            ToDoListModels task = _dbContext.ToDoListContext.Find(taskID)!; 
+
+            task.IsArchived = true;
+            
+            _dbContext.SaveChanges();
+
+            return true; 
+        }
+
+        public bool UnArchiveTask(int taskID)
+        {
+            ToDoListModels task = _dbContext.ToDoListContext.Find(taskID)!;
+
+            task.IsArchived = false;
+
+            _dbContext.SaveChanges();
+
+            return true; 
+        }
+
+        public IQueryable<ToDoListModels> GetAllTasks(ToDoListModels newModel)
+        {
+            return (IQueryable<ToDoListModels>)_dbContext.ToDoListContext.ToHashSet<ToDoListModels>()
+                .Where(x =>
+                                x.IsCompleted == newModel.IsCompleted &&
+                                x.IsArchived == newModel.IsArchived);
         }
 
         public ToDoListModels GetTaskById(int taskID) 
         {
-            ToDoListModels task = _dbContext.ToDoListContext.Find(taskID);
+            ToDoListModels task = _dbContext.ToDoListContext.Find(taskID)!;
 
             return task; 
         }
